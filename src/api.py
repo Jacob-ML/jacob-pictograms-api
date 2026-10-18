@@ -25,8 +25,8 @@ _openai_client: OpenAI | None = None
 
 def _init_openai() -> OpenAI:
     return OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=config.openrouter_api_key,
+        base_url=config.cloud_base_url,
+        api_key=config.cloud_api_key,
     )
 
 
@@ -34,18 +34,17 @@ def _init_openai() -> OpenAI:
 # Lifespan — load data once
 # ---------------------------------------------------------------------------
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global store, _openai_client
 
     logger.info("Loading dataset …")
     store = EmbeddingStore()
-    logger.info(
-        "Dataset loaded — %d items in memory.", store.count()
-    )
+    logger.info("Dataset loaded — %d items in memory.", store.count())
 
     _openai_client = _init_openai()
-    logger.info("OpenRouter client ready.")
+    logger.info("OpenAI API compatible client ready.")
 
     yield
 
@@ -80,13 +79,14 @@ async def search(
 ):
     """Return the most semantically relevant image for *q*.
 
-    The query text is embedded via OpenRouter, dot-producted against all
-    stored embeddings, and the best match is returned as a base64 PNG.
+    The query text is embedded via an OpenAI API compatible service,
+    dot-producted against all stored embeddings, and the best match is returned
+    as a base64 PNG.
     """
     if store is None or _openai_client is None:
         raise HTTPException(503, "Service not yet initialised.")
 
-    # --- embed query via OpenRouter ----------------------------------------
+    # --- embed query ----------------------------------------
     resp = _openai_client.embeddings.create(
         input=q,
         model=config.embedding_model,
