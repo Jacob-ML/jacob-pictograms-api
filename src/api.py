@@ -90,9 +90,12 @@ async def search(
     resp = _openai_client.embeddings.create(
         input=q,
         model=config.embedding_model,
-        dimensions=256,
     )
-    query_vec = np.array(resp.data[0].embedding, dtype=np.float32)
+
+    # slice into only 256 dims
+    embedding = resp.data[0].embedding[:256]
+
+    query_vec = np.array(embedding, dtype=np.float32)
 
     # --- find best match (vectorised dot product) --------------------------
     idx = store.search(query_vec)
